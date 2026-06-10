@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>GIRA — Tabela Periódica Mágica!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="elements-data.js"></script>
+<style>
+  :root{
+    --ink:#473154; --ink-soft:#7d6a88; --ink-faint:#a99cb2;
+    --card:#FFFFFF; --cream:#FFF3DF; --cream2:#FFE9CC;
+    --sun:#FFC23C; --sunDk:#EF9A1E;
+    --tile:60px; --gap:6px;
+    --font-display:'Baloo 2',system-ui,sans-serif; --font-body:'Fredoka',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:linear-gradient(180deg,#7FD0FF 0%, #A6E0FF 26%, #D6F0FF 54%, #FFF1DA 100%);
+    background-attachment:fixed;
+    color:var(--ink); font-family:var(--font-body); overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  #root{height:100dvh;display:flex;flex-direction:column;position:relative;z-index:1;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  ::-webkit-scrollbar{height:9px;width:9px;}
+  ::-webkit-scrollbar-thumb{background:rgba(120,90,140,.28);border-radius:99px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  /* sky decorations */
+  .decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .cloud{position:absolute;width:96px;height:34px;background:rgba(255,255,255,.75);border-radius:99px;
+    box-shadow:0 8px 18px rgba(120,160,200,.18);animation:drift var(--cd,80s) linear infinite;}
+  .cloud::before{content:'';position:absolute;width:50px;height:50px;background:inherit;border-radius:50%;top:-22px;left:12px;}
+  .cloud::after{content:'';position:absolute;width:38px;height:38px;background:inherit;border-radius:50%;top:-15px;left:50px;}
+  @keyframes drift{from{transform:translateX(-20px) var(--sc,scale(1));}to{transform:translateX(40px) var(--sc,scale(1));}}
+  .spark{position:absolute;animation:tw var(--d,3s) ease-in-out infinite alternate;}
+  @keyframes tw{from{opacity:.25;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
+  @media (prefers-reduced-motion: reduce){.spark,.cloud{animation:none;}}
+
+  .fade-in{animation:fadein .35s ease both;}
+  @keyframes fadein{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  @keyframes pop{0%{transform:scale(.7) translateY(20px);opacity:0;}70%{transform:scale(1.04);}100%{transform:scale(1);opacity:1;}}
+  @keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  @keyframes bob{0%,100%{transform:rotate(-3deg);}50%{transform:rotate(3deg);}}
+  .floaty{animation:floaty 2.6s ease-in-out infinite;}
+
+  /* ELEMENT TILE — chunky sticker */
+  .tile{
+    width:var(--tile);height:var(--tile);border-radius:17px;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:#fff;border:3px solid #fff;overflow:hidden;
+    transition:transform .14s cubic-bezier(.34,1.6,.64,1), opacity .2s, filter .2s;
+    box-shadow:0 4px 0 rgba(91,70,104,.22), 0 6px 12px rgba(91,70,104,.16);
+  }
+  .tile:active{transform:scale(.85) rotate(-2deg);}
+  .tile .num{position:absolute;top:3px;left:6px;font-size:9px;font-weight:700;opacity:.95;}
+  .tile .fav{position:absolute;top:1px;right:4px;font-size:11px;}
+  .tile .emo{font-size:calc(var(--tile)*.37);line-height:1;margin-top:7px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18));}
+  .tile .sym{font-family:var(--font-display);font-weight:800;font-size:calc(var(--tile)*.27);line-height:1;margin-top:1px;text-shadow:0 1px 1px rgba(0,0,0,.2);}
+  .tile.dim{opacity:.2;filter:saturate(.5);}
+  .placeholder{
+    width:var(--tile);height:var(--tile);border-radius:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;color:#fff;border:3px dashed rgba(255,255,255,.85);
+    background:rgba(255,255,255,.22);text-align:center;line-height:1.05;
+  }
+
+  .chip{
+    flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:9px 15px;border-radius:99px;
+    font-weight:700;font-size:14px;background:#fff;color:var(--ink-soft);
+    border:3px solid #fff;transition:transform .12s;white-space:nowrap;
+    box-shadow:0 3px 0 rgba(91,70,104,.16);
+  }
+  .chip:active{transform:scale(.93);}
+
+  .pillbtn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:linear-gradient(180deg,#FFD15C,#FF9F1C);color:#5b3700;font-weight:800;font-family:var(--font-display);
+    padding:15px 22px;border-radius:20px;font-size:18px;box-shadow:0 5px 0 #d77f10;transition:transform .1s;
+    border:3px solid #fff;
+  }
+  .pillbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #d77f10;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useRef,useCallback} = React;
+const CATS = window.CATEGORIES;
+const ELEMENTS = window.ELEMENTS;
+const byNum = {}; ELEMENTS.forEach(e=>byNum[e.n]=e);
+
+/* ---------- i18n ---------- */
+const T = {
+  pt:{appsub:'Toque num elemento pra explorar!',table:'Tabela',search:'Buscar',quiz:'Quiz',favs:'Coleção',
+      all:'Todos',foundIn:'Onde encontrar',funFact:'Curiosidade Incrível!',numLabel:'Número',catLabel:'Família',symLabel:'Símbolo',
+      searchPh:'Buscar por nome ou símbolo...',noRes:'Nenhum elemento encontrado 🔍',
+      noFav:'Sua coleção está vazia!',noFavSub:'Toque na ⭐ de um elemento pra colecionar figurinhas!',myColl:'Minha Coleção',collected:'figurinhas',
+      qTitleSym:'Qual é o símbolo de',qTitleName:'Que elemento é',qTitleCat:'A qual família pertence',
+      correct:['Incrível! 🌟','Mandou bem! 🎉','Você é um cientista! 🔬','Show de bola! 🚀','Perfeito! ✨'],
+      wrong:'Quase! A resposta era',next:'Próxima  →',start:'Começar!',score:'Pontos',streak:'seguidas',best:'Recorde',
+      swipe:'← arraste pra ver tudo →',
+      qReady:'Pronto pro desafio?',qReadySub:'Responda sobre os elementos e ganhe pontos!',thisIs:'Eu sou'},
+  en:{appsub:'Tap an element to explore!',table:'Table',search:'Search',quiz:'Quiz',favs:'Collection',
+      all:'All',foundIn:'Where to find it',funFact:'Amazing Fact!',numLabel:'Number',catLabel:'Family',symLabel:'Symbol',
+      searchPh:'Search by name or symbol...',noRes:'No elements found 🔍',
+      noFav:'Your collection is empty!',noFavSub:'Tap the ⭐ on an element to collect stickers!',myColl:'My Collection',collected:'stickers',
+      qTitleSym:'What is the symbol for',qTitleName:'Which element is',qTitleCat:'Which family does it belong to',
+      correct:['Amazing! 🌟','Nailed it! 🎉','You\'re a scientist! 🔬','Awesome! 🚀','Perfect! ✨'],
+      wrong:'Almost! The answer was',next:'Next  →',start:'Start!',score:'Points',streak:'streak',best:'Best',
+      swipe:'← swipe to see it all →',
+      qReady:'Ready to play?',qReadySub:'Answer questions about the elements and earn points!',thisIs:'I am'},
+};
+
+/* ---------- sound ---------- */
+const Sound=(()=>{let ctx;const ac=()=>{if(!ctx)try{ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}return ctx;};
+  const tone=(f,d,t='sine',g=.22,when=0)=>{const c=ac();if(!c)return;const o=c.createOscillator(),gn=c.createGain();
+    o.connect(gn);gn.connect(c.destination);o.type=t;o.frequency.value=f;const s=c.currentTime+when;
+    gn.gain.setValueAtTime(g,s);gn.gain.exponentialRampToValueAtTime(.0001,s+d);o.start(s);o.stop(s+d);};
+  return{tap:()=>tone(680,.08,'sine',.12),
+    open:()=>{tone(587,.12,'sine',.14);tone(880,.16,'sine',.14,.06);},
+    correct:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.22,'triangle',.18,i*.08));},
+    wrong:()=>{tone(300,.16,'sine',.12);tone(200,.26,'sine',.12,.12);},
+    star:()=>{[784,1046,1318].forEach((f,i)=>tone(f,.18,'sine',.16,i*.06));}};})();
+
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+function shade(hex,p){const n=parseInt(hex.slice(1),16);let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  r=Math.max(0,Math.min(255,r+(r*p/100)|0));g=Math.max(0,Math.min(255,g+(g*p/100)|0));b=Math.max(0,Math.min(255,b+(b*p/100)|0));
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+
+/* ---------- cute face bits ---------- */
+function Eyes({s=13,look=false}){
+  const eye={width:s,height:s*1.15,borderRadius:'50%',background:'#fff',display:'flex',alignItems:'flex-end',justifyContent:'center',paddingBottom:s*0.12,boxShadow:'inset 0 -1px 2px rgba(0,0,0,.08)'};
+  const pup={width:s*0.5,height:s*0.5,borderRadius:'50%',background:'#3a2b3f'};
+  return <div style={{display:'flex',gap:s*0.55}}><div style={eye}><div style={pup}/></div><div style={eye}><div style={pup}/></div></div>;
+}
+function Smile({w=22,col='rgba(255,255,255,.92)'}){
+  return <div style={{width:w,height:w*0.5,border:'3px solid '+col,borderTop:'none',borderRadius:`0 0 ${w}px ${w}px`,margin:'3px 0 0'}}/>;
+}
+
+/* ---------- decorations ---------- */
+function Decor(){
+  const clouds=useRef([{t:7,l:-3,s:1.25,cd:90},{t:15,l:68,s:.85,cd:120},{t:43,l:24,s:1.05,cd:105},{t:66,l:78,s:.75,cd:135},{t:84,l:8,s:.95,cd:115}]).current;
+  const sparks=useRef(Array.from({length:13},()=>({t:Math.random()*92,l:Math.random()*95,d:(2+Math.random()*3).toFixed(1),de:(Math.random()*3).toFixed(1),s:(11+Math.random()*11)|0}))).current;
+  return <div className="decor">
+    {clouds.map((c,i)=><div key={i} className="cloud" style={{top:c.t+'%',left:c.l+'%','--sc':`scale(${c.s})`,'--cd':c.cd+'s',transform:`scale(${c.s})`}}/>)}
+    {sparks.map((s,i)=><span key={i} className="spark" style={{top:s.t+'%',left:s.l+'%',fontSize:s.s,'--d':s.d+'s',animationDelay:s.de+'s'}}>{i%3===0?'⭐':'✨'}</span>)}
+  </div>;
+}
+
+/* ---------- element tile ---------- */
+function Tile({el,lang,onTap,dim,faved}){
+  const c=CATS[el.cat];
+  return <button className={'tile'+(dim?' dim':'')} style={{
+      gridRow:el.row,gridColumn:el.col,
+      background:`linear-gradient(165deg, ${shade(c.color,14)} 0%, ${c.color} 70%, ${shade(c.color,-12)} 100%)`,
+    }} onClick={()=>{Sound.tap();onTap(el);}}>
+    <span className="num">{el.n}</span>
+    {faved&&<span className="fav">⭐</span>}
+    <span className="emo">{el.emoji}</span>
+    <span className="sym">{el.sym}</span>
+  </button>;
+}
+
+/* ---------- periodic table view ---------- */
+function TableView({lang,onSelect,favs,filterCat,setFilterCat}){
+  const t=T[lang];
+  const cats=Object.keys(CATS);
+  return <div className="fade-in" style={{display:'flex',flexDirection:'column',height:'100%'}}>
+    <div style={{display:'flex',gap:9,overflowX:'auto',padding:'4px 16px 12px',flex:'0 0 auto'}}>
+      <button className="chip" style={filterCat===null?{background:'var(--sun)',color:'#5b3700',borderColor:'#fff'}:{}}
+        onClick={()=>{Sound.tap();setFilterCat(null);}}>🌈 {t.all}</button>
+      {cats.map(k=>{const c=CATS[k];const on=filterCat===k;
+        return <button key={k} className="chip" style={on?{background:c.color,color:'#fff',borderColor:'#fff'}:{}}
+          onClick={()=>{Sound.tap();setFilterCat(on?null:k);}}>
+          <span style={{fontSize:15}}>{c.emoji}</span>{c.name[lang]}</button>;})}
+    </div>
+    <div style={{flex:'1 1 auto',overflow:'auto',padding:'4px 16px 18px'}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(18, var(--tile))',
+        gridTemplateRows:'repeat(7, var(--tile)) 16px repeat(2, var(--tile))',gap:'var(--gap)',width:'max-content',margin:'0 auto'}}>
+        {ELEMENTS.map(el=><Tile key={el.n} el={el} lang={lang} onTap={onSelect}
+          faved={favs.has(el.n)} dim={filterCat&&el.cat!==filterCat}/>)}
+        <div className="placeholder" style={{gridRow:6,gridColumn:3,background:CATS.lanthanide.color+'cc',borderColor:'#fff'}}>57-71</div>
+        <div className="placeholder" style={{gridRow:7,gridColumn:3,background:CATS.actinide.color+'cc',borderColor:'#fff'}}>89-103</div>
+        <div style={{gridRow:9,gridColumn:'1 / 3',display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:8,fontSize:11,fontWeight:800,color:shade(CATS.lanthanide.color,-30)}}>🌟 {CATS.lanthanide.name[lang]}</div>
+        <div style={{gridRow:10,gridColumn:'1 / 3',display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:8,fontSize:11,fontWeight:800,color:shade(CATS.actinide.color,-20)}}>☢️ {CATS.actinide.name[lang]}</div>
+      </div>
+      <p className="floaty" style={{textAlign:'center',color:'var(--ink-soft)',fontSize:13,marginTop:14,fontWeight:700}}>{t.swipe}</p>
+    </div>
+  </div>;
+}
+
+/* ---------- element detail modal ---------- */
+function Modal({el,lang,onClose,onNav,faved,toggleFav}){
+  const t=T[lang],c=CATS[el.cat];
+  useEffect(()=>{Sound.open();},[el.n]);
+  return <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:50,background:'rgba(40,28,52,.42)',
+      backdropFilter:'blur(3px)',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+    <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:520,maxHeight:'93dvh',overflowY:'auto',
+        background:'var(--card)',borderRadius:'34px 34px 0 0',padding:'12px 22px calc(26px + env(safe-area-inset-bottom))',
+        boxShadow:'0 -12px 44px rgba(60,40,80,.32)',animation:'pop .34s ease both'}}>
+      <div style={{width:50,height:6,borderRadius:99,background:'#e6dced',margin:'4px auto 16px'}}/>
+      {/* hero character */}
+      <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:18}}>
+        <div className="floaty" style={{width:112,height:112,flex:'0 0 auto',borderRadius:28,position:'relative',display:'flex',flexDirection:'column',
+          alignItems:'center',justifyContent:'center',color:'#fff',border:'4px solid #fff',
+          background:`linear-gradient(160deg, ${shade(c.color,14)}, ${c.color} 70%, ${shade(c.color,-14)})`,
+          boxShadow:'0 8px 0 rgba(91,70,104,.2), 0 10px 20px rgba(91,70,104,.2)'}}>
+          <span style={{position:'absolute',top:7,left:11,fontSize:13,fontWeight:800}}>{el.n}</span>
+          <Eyes s={14}/>
+          <span style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:38,lineHeight:1,margin:'1px 0',textShadow:'0 1px 2px rgba(0,0,0,.2)'}}>{el.sym}</span>
+          <Smile w={24}/>
+          <div style={{position:'absolute',bottom:-12,right:-12,width:44,height:44,borderRadius:'50%',background:'#fff',
+            display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,boxShadow:'0 3px 8px rgba(91,70,104,.25)'}}>{el.emoji}</div>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <h2 style={{fontFamily:'var(--font-display)',fontSize:30,fontWeight:800,lineHeight:1.05,color:'var(--ink)'}}>{el.name[lang]}</h2>
+          <p style={{color:'var(--ink-soft)',fontSize:15,fontWeight:600,marginTop:2}}>{el.name[lang==='pt'?'en':'pt']}</p>
+          <span style={{display:'inline-flex',alignItems:'center',gap:6,marginTop:9,padding:'6px 13px',borderRadius:99,
+            background:c.color,color:'#fff',fontWeight:800,fontSize:13,boxShadow:'0 3px 0 '+shade(c.color,-22)}}>{c.emoji} {c.name[lang]}</span>
+        </div>
+        <button onClick={()=>{faved?Sound.tap():Sound.star();toggleFav(el.n);}} aria-label="favorite" style={{flex:'0 0 auto',width:52,height:52,borderRadius:18,
+          background:faved?'var(--sun)':'#f2ecf5',display:'flex',alignItems:'center',justifyContent:'center',
+          fontSize:25,boxShadow:faved?'0 4px 0 var(--sunDk)':'0 4px 0 #ddd3e3',transition:'transform .1s'}}>{faved?'⭐':'☆'}</button>
+      </div>
+      <div style={{display:'flex',gap:10,marginBottom:16}}>
+        <Stat label={t.numLabel} value={el.n} tint={c.color}/>
+        <Stat label={t.symLabel} value={el.sym} tint={c.color}/>
+        <Stat label={t.catLabel} value={c.emoji} small={c.name[lang]} tint={c.color}/>
+      </div>
+      <Section icon="📍" title={t.foundIn} body={el.found[lang]} tint={c.color}/>
+      <Section icon="💡" title={t.funFact} body={el.fact[lang]} tint={c.color} big/>
+      <p style={{textAlign:'center',color:'var(--ink-soft)',fontSize:13.5,fontWeight:700,margin:'8px 0 16px'}}>{c.emoji} {c.desc[lang]}</p>
+      <div style={{display:'flex',gap:12}}>
+        <button onClick={()=>{Sound.tap();onNav(-1);}} style={navBtn}>←</button>
+        <button onClick={onClose} className="pillbtn" style={{flex:1}}>{lang==='pt'?'Fechar':'Close'}</button>
+        <button onClick={()=>{Sound.tap();onNav(1);}} style={navBtn}>→</button>
+      </div>
+    </div>
+  </div>;
+}
+const navBtn={width:56,height:56,borderRadius:18,background:'var(--cream)',color:'var(--sunDk)',fontSize:26,fontWeight:800,
+  display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 0 #f0d9b0',border:'3px solid #fff'};
+function Stat({label,value,small,tint}){return <div style={{flex:1,background:'var(--cream)',borderRadius:18,padding:'11px 8px',textAlign:'center',border:'2px solid #fff'}}>
+  <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:small?20:24,lineHeight:1.1,color:tint?shade(tint,-25):'var(--ink)'}}>{value}</div>
+  <div style={{fontSize:10.5,color:'var(--ink-soft)',fontWeight:700,marginTop:3,textTransform:'uppercase',letterSpacing:.4}}>{small||label}</div></div>;}
+function Section({icon,title,body,tint,big}){return <div style={{background:tint+'1f',borderRadius:22,padding:'15px 17px',marginBottom:12,border:'2px solid '+tint+'33'}}>
+  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
+    <span style={{fontSize:20}}>{icon}</span>
+    <span style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:15,color:shade(tint,-28)}}>{title}</span></div>
+  <p style={{fontSize:big?16.5:15,lineHeight:1.5,color:'var(--ink)',fontWeight:500,textWrap:'pretty'}}>{body}</p></div>;}
+
+/* ---------- search ---------- */
+function SearchView({lang,onSelect,favs}){
+  const t=T[lang];const[q,setQ]=useState('');
+  const res=q.trim()?ELEMENTS.filter(e=>{const s=q.trim().toLowerCase();
+    return e.sym.toLowerCase()===s||e.sym.toLowerCase().startsWith(s)||e.name.en.toLowerCase().includes(s)||e.name.pt.toLowerCase().includes(s)||String(e.n)===s;}):ELEMENTS;
+  return <div className="fade-in" style={{height:'100%',display:'flex',flexDirection:'column',padding:'4px 16px 16px'}}>
+    <div style={{position:'relative',marginBottom:14}}>
+      <span style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',fontSize:20}}>🔍</span>
+      <input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder={t.searchPh}
+        style={{width:'100%',padding:'15px 16px 15px 46px',borderRadius:20,border:'3px solid #fff',
+        background:'#fff',color:'var(--ink)',fontSize:16,fontFamily:'var(--font-body)',fontWeight:600,outline:'none',
+        boxShadow:'0 4px 0 rgba(91,70,104,.12)'}}/>
+    </div>
+    <div style={{flex:1,overflowY:'auto'}}>
+      {res.length===0?<p style={{textAlign:'center',color:'var(--ink-soft)',marginTop:40,fontSize:17,fontWeight:700}}>{t.noRes}</p>:
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(80px,1fr))',gap:12}}>
+        {res.map(el=>{const c=CATS[el.cat];return <button key={el.n} onClick={()=>{Sound.tap();onSelect(el);}}
+          style={{borderRadius:18,padding:'11px 4px 9px',color:'#fff',position:'relative',border:'3px solid #fff',
+            background:`linear-gradient(160deg, ${shade(c.color,14)}, ${c.color} 70%, ${shade(c.color,-12)})`,
+            boxShadow:'0 4px 0 rgba(91,70,104,.18)'}}>
+          <span style={{position:'absolute',top:5,left:8,fontSize:10,fontWeight:700,opacity:.95}}>{el.n}</span>
+          {favs.has(el.n)&&<span style={{position:'absolute',top:3,right:6,fontSize:11}}>⭐</span>}
+          <div style={{fontSize:25,lineHeight:1.1}}>{el.emoji}</div>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:22,lineHeight:1.05}}>{el.sym}</div>
+          <div style={{fontSize:10.5,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',padding:'0 3px'}}>{el.name[lang]}</div>
+        </button>;})}
+      </div>}
+    </div>
+  </div>;
+}
+
+/* ---------- favorites / sticker collection ---------- */
+function FavsView({lang,onSelect,favs}){
+  const t=T[lang];const list=ELEMENTS.filter(e=>favs.has(e.n));
+  if(list.length===0)return <div className="fade-in" style={{height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:30,textAlign:'center'}}>
+    <div style={{fontSize:78,marginBottom:8}} className="floaty">⭐</div>
+    <h2 style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:25,marginBottom:8,color:'var(--ink)'}}>{t.noFav}</h2>
+    <p style={{color:'var(--ink-soft)',fontSize:16,fontWeight:600,maxWidth:300}}>{t.noFavSub}</p></div>;
+  return <div className="fade-in" style={{height:'100%',overflowY:'auto',padding:'4px 16px 16px'}}>
+    <div style={{textAlign:'center',marginBottom:16}}>
+      <h2 style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:25,color:'var(--ink)'}}>⭐ {t.myColl}</h2>
+      <p style={{color:'var(--ink-soft)',fontWeight:800,fontSize:14}}>{list.length} {t.collected}</p>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(96px,1fr))',gap:16}}>
+      {list.map((el,i)=>{const c=CATS[el.cat];return <button key={el.n} onClick={()=>{Sound.tap();onSelect(el);}}
+        style={{borderRadius:20,padding:'14px 6px 12px',color:'#fff',position:'relative',
+          background:`linear-gradient(160deg, ${shade(c.color,14)}, ${c.color} 70%, ${shade(c.color,-14)})`,
+          border:'4px solid #fff',transform:`rotate(${(i%2?1:-1)*2.5}deg)`,
+          boxShadow:'0 6px 16px rgba(91,70,104,.32)'}}>
+        <span style={{position:'absolute',top:7,left:10,fontSize:11,fontWeight:700}}>{el.n}</span>
+        <div style={{fontSize:30,marginBottom:1}}>{el.emoji}</div>
+        <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:28,lineHeight:1}}>{el.sym}</div>
+        <div style={{fontSize:11,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',padding:'0 2px',marginTop:2}}>{el.name[lang]}</div>
+      </button>;})}
+    </div>
+  </div>;
+}
+
+/* ---------- quiz ---------- */
+function makeQ(lang){
+  const pool=ELEMENTS.slice(0,54);
+  const el=pool[(Math.random()*pool.length)|0];
+  const types=['sym','name','cat'];const type=types[(Math.random()*types.length)|0];
+  let prompt,correct,options;
+  if(type==='sym'){prompt=T[lang].qTitleSym+' '+el.name[lang]+'?';correct=el.sym;
+    options=shuffle([correct,...shuffle(ELEMENTS.filter(e=>e.n!==el.n)).slice(0,3).map(e=>e.sym)]);}
+  else if(type==='name'){prompt=T[lang].qTitleName+' "'+el.sym+'"?';correct=el.name[lang];
+    options=shuffle([correct,...shuffle(ELEMENTS.filter(e=>e.n!==el.n)).slice(0,3).map(e=>e.name[lang])]);}
+  else{prompt=T[lang].qTitleCat+' — '+el.name[lang]+' ('+el.sym+')?';correct=CATS[el.cat].name[lang];
+    const others=shuffle(Object.keys(CATS).filter(k=>k!==el.cat)).slice(0,3).map(k=>CATS[k].name[lang]);
+    options=shuffle([correct,...others]);}
+  return{el,prompt,correct,options,type};
+}
+function QuizView({lang}){
+  const t=T[lang];
+  const[playing,setPlaying]=useState(false);
+  const[q,setQ]=useState(null);const[picked,setPicked]=useState(null);
+  const[score,setScore]=useState(0);const[streak,setStreak]=useState(0);
+  const[best,setBest]=useState(()=>+(localStorage.getItem('gira_best')||0));
+  const[msg,setMsg]=useState('');const[burst,setBurst]=useState(false);
+  const begin=()=>{setScore(0);setStreak(0);setPlaying(true);setPicked(null);setQ(makeQ(lang));};
+  const answer=(opt)=>{if(picked)return;setPicked(opt);
+    if(opt===q.correct){Sound.correct();const ns=streak+1;setStreak(ns);setScore(s=>s+10+ns*2);
+      setMsg(t.correct[(Math.random()*t.correct.length)|0]);setBurst(true);setTimeout(()=>setBurst(false),800);
+      const nb=Math.max(best,ns);if(nb!==best){setBest(nb);localStorage.setItem('gira_best',nb);}}
+    else{Sound.wrong();setStreak(0);setMsg(t.wrong+' '+q.correct);}};
+  const next=()=>{setPicked(null);setMsg('');setQ(makeQ(lang));};
+  useEffect(()=>{if(playing)setQ(makeQ(lang));/*eslint-disable-next-line*/},[lang]);
+
+  if(!playing)return <div className="fade-in" style={{height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:30,textAlign:'center'}}>
+    <div className="floaty" style={{fontSize:84,marginBottom:14}}>🎯</div>
+    <h2 style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:27,marginBottom:8,color:'var(--ink)'}}>{t.qReady}</h2>
+    <p style={{color:'var(--ink-soft)',fontSize:16,fontWeight:600,maxWidth:320,marginBottom:10}}>{t.qReadySub}</p>
+    {best>0&&<p style={{color:'var(--sunDk)',fontWeight:800,fontSize:15,marginBottom:18}}>🏆 {t.best}: {best} {t.streak}</p>}
+    <button className="pillbtn" onClick={()=>{Sound.star();begin();}} style={{fontSize:20,padding:'16px 36px'}}>{t.start}</button>
+  </div>;
+
+  return <div className="fade-in" style={{height:'100%',display:'flex',flexDirection:'column',padding:'4px 18px 18px'}}>
+    <div style={{display:'flex',gap:10,marginBottom:14}}>
+      <Score icon="⭐" label={t.score} value={score}/>
+      <Score icon="🔥" label={t.streak} value={streak}/>
+      <Score icon="🏆" label={t.best} value={best}/>
+    </div>
+    <div style={{background:'linear-gradient(160deg,#9B6BFF,#6C8BFF)',borderRadius:26,padding:'22px 18px',textAlign:'center',marginBottom:14,position:'relative',overflow:'hidden',border:'4px solid #fff',boxShadow:'0 6px 0 rgba(91,70,104,.18)'}}>
+      {burst&&<Burst/>}
+      <div style={{fontSize:48,marginBottom:6}}>{q.type==='sym'?'🔤':q.type==='name'?'🧩':'🏷️'}</div>
+      <p style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:21,lineHeight:1.25,textWrap:'balance',color:'#fff',textShadow:'0 1px 3px rgba(0,0,0,.18)'}}>{q.prompt}</p>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,flex:'0 0 auto'}}>
+      {q.options.map((opt,i)=>{let bg='#fff',sh='rgba(91,70,104,.18)',col='var(--ink)';
+        if(picked){if(opt===q.correct){bg='#2ECC71';sh='#1e8c4d';col='#fff';}else if(opt===picked){bg='#FF6B6B';sh='#c93b3b';col='#fff';}else{bg='#fff';col='var(--ink-faint)';}}
+        return <button key={i} disabled={!!picked} onClick={()=>answer(opt)} style={{
+          padding:'18px 10px',borderRadius:20,background:bg,color:col,fontFamily:'var(--font-display)',border:'3px solid #fff',
+          fontWeight:800,fontSize:opt.length>10?16:20,boxShadow:'0 5px 0 '+sh,transition:'transform .1s',
+          minHeight:64,textWrap:'balance'}}>{opt}</button>;})}
+    </div>
+    <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'flex-end'}}>
+      {picked&&<div className="fade-in" style={{textAlign:'center'}}>
+        <p style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:21,marginBottom:12,
+          color:picked===q.correct?'#1e9e57':'var(--sunDk)'}}>{msg}</p>
+        <button className="pillbtn" onClick={()=>{Sound.tap();next();}} style={{width:'100%'}}>{t.next}</button>
+      </div>}
+    </div>
+  </div>;
+}
+function Score({icon,label,value}){return <div style={{flex:1,background:'#fff',borderRadius:18,padding:'10px 6px',textAlign:'center',border:'2px solid #fff',boxShadow:'0 3px 0 rgba(91,70,104,.12)'}}>
+  <div style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:22,color:'var(--ink)'}}>{icon} {value}</div>
+  <div style={{fontSize:10.5,color:'var(--ink-soft)',fontWeight:700,marginTop:2,textTransform:'uppercase',letterSpacing:.4}}>{label}</div></div>;}
+function Burst(){const bits=Array.from({length:14},(_,i)=>i);
+  return <div style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden'}}>{bits.map(i=>{
+    const a=(i/14)*Math.PI*2,r=70+Math.random()*40,col=['#FFD15C','#FF6BD6','#54A0FF','#2ECC71','#fff'][i%5];
+    return <span key={i} style={{position:'absolute',left:'50%',top:'40%',width:10,height:10,borderRadius:3,background:col,
+      animation:'burst .8s ease-out forwards','--tx':Math.cos(a)*r+'px','--ty':Math.sin(a)*r+'px'}}/>;})}</div>;}
+
+/* ---------- bottom nav ---------- */
+function Nav({view,setView,lang}){
+  const t=T[lang];
+  const items=[['table','🔬',t.table],['search','🔍',t.search],['quiz','🎯',t.quiz],['favs','⭐',t.favs]];
+  return <nav style={{flex:'0 0 auto',display:'flex',gap:6,padding:'10px 14px calc(10px + env(safe-area-inset-bottom))',
+    background:'#fff',borderRadius:'26px 26px 0 0',boxShadow:'0 -6px 24px rgba(91,70,104,.14)'}}>
+    {items.map(([k,ic,lb])=>{const on=view===k;
+      return <button key={k} onClick={()=>{Sound.tap();setView(k);}} aria-label={lb} style={{flex:1,display:'flex',flexDirection:'column',
+        alignItems:'center',gap:3,padding:'8px 4px',borderRadius:18,transition:'background .2s',
+        background:on?'var(--cream)':'transparent'}}>
+        <span style={{fontSize:24,transform:on?'scale(1.15) translateY(-1px)':'none',transition:'transform .15s',filter:on?'none':'grayscale(.35) opacity(.6)'}}>{ic}</span>
+        <span style={{fontSize:11.5,fontWeight:on?800:600,color:on?'var(--sunDk)':'var(--ink-faint)'}}>{lb}</span>
+      </button>;})}
+  </nav>;
+}
+
+/* ---------- app shell ---------- */
+function App(){
+  const[lang,setLang]=useState(()=>localStorage.getItem('gira_lang')||'pt');
+  const[view,setView]=useState('table');
+  const[sel,setSel]=useState(null);
+  const[favs,setFavs]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem('gira_favs')||'[]'));}catch(e){return new Set();}});
+  const[filterCat,setFilterCat]=useState(null);
+  const t=T[lang];
+  useEffect(()=>{localStorage.setItem('gira_lang',lang);document.documentElement.lang=lang==='pt'?'pt-BR':'en';},[lang]);
+  useEffect(()=>{localStorage.setItem('gira_favs',JSON.stringify([...favs]));},[favs]);
+  const toggleFav=useCallback(n=>setFavs(p=>{const s=new Set(p);s.has(n)?s.delete(n):s.add(n);return s;}),[]);
+  const nav=d=>{let nx=sel.n+d;if(nx<1)nx=118;if(nx>118)nx=1;setSel(byNum[nx]);};
+
+  return <React.Fragment>
+    <Decor/>
+    <header style={{flex:'0 0 auto',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 18px 8px'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <div style={{width:46,height:46,borderRadius:15,background:'linear-gradient(160deg,#FFD15C,#FF9F1C)',border:'3px solid #fff',
+          display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,boxShadow:'0 4px 0 #d77f10'}} className="floaty">⚛️</div>
+        <div>
+          <h1 style={{fontFamily:'var(--font-display)',fontWeight:800,fontSize:24,lineHeight:1,letterSpacing:-.3,color:'#fff',textShadow:'0 2px 4px rgba(70,110,150,.35)'}}>GIRA</h1>
+          <p style={{color:'#3c5b78',fontSize:12,fontWeight:700,marginTop:2}}>{t.appsub}</p>
+        </div>
+      </div>
+      <button onClick={()=>{Sound.tap();setLang(l=>l==='pt'?'en':'pt');}} aria-label="language" style={{display:'flex',alignItems:'center',gap:7,
+        padding:'10px 15px',borderRadius:99,background:'#fff',fontWeight:800,fontSize:14,color:'var(--ink)',
+        boxShadow:'0 4px 0 rgba(91,70,104,.16)',border:'3px solid #fff'}}>
+        <span style={{fontSize:18}}>{lang==='pt'?'🇧🇷':'🇺🇸'}</span>{lang==='pt'?'PT':'EN'}
+        <span style={{opacity:.45,fontSize:13}}>⇄</span></button>
+    </header>
+    <main style={{flex:'1 1 auto',minHeight:0}}>
+      {view==='table'&&<TableView lang={lang} onSelect={setSel} favs={favs} filterCat={filterCat} setFilterCat={setFilterCat}/>}
+      {view==='search'&&<SearchView lang={lang} onSelect={setSel} favs={favs}/>}
+      {view==='quiz'&&<QuizView lang={lang}/>}
+      {view==='favs'&&<FavsView lang={lang} onSelect={setSel} favs={favs}/>}
+    </main>
+    <Nav view={view} setView={v=>{setSel(null);setView(v);}} lang={lang}/>
+    {sel&&<Modal el={sel} lang={lang} onClose={()=>setSel(null)} onNav={nav} faved={favs.has(sel.n)} toggleFav={toggleFav}/>}
+  </React.Fragment>;
+}
+
+const style=document.createElement('style');
+style.textContent='@keyframes burst{to{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0;}}';
+document.head.appendChild(style);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
