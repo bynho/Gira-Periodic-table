@@ -1,0 +1,21 @@
+{
+  "name": "gira-periodic-table",
+  "version": "1.0.0",
+  "description": "GIRA — Tabela Periódica Mágica! An interactive periodic table application.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx http-server public -p 3000 -c-1",
+    "start": "npx http-server public -p 8080"
+  },
+  "keywords": [
+    "periodic-table",
+    "chemistry",
+    "education",
+    "react"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
